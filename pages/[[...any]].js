@@ -16,7 +16,7 @@ export default function Home() {
 
         <p className={styles.description}>
           Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
+          <code className={styles.code}>pages/test.js</code>
         </p>
 
         <div className={styles.grid}>
@@ -63,3 +63,5 @@ export default function Home() {
     </div>
   )
 }
+
+export const getServerSideProps = () => {}

@@ -1,34 +1,55 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+The change [#145](https://github.com/netlify/next-on-netlify/pull/145) "revert route/redirect sorting logic to static then dynamic" causes the `_redirects` file to be sorted wrong when using an optional catch all route and dynamic paths. 
 
-## Getting Started
+## How to reproduce
 
-First, run the development server:
+Execute the following command
 
 ```bash
-npm run dev
-# or
-yarn dev
+yarn install
+yarn netlify
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Problem
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+The resulting `_redirects` file looks like this on version `^2.8.3`
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+```
+# Next-on-Netlify Redirects
+/_next/data/tveFS5JTA64mmnqiHIWfA/test.json  /.netlify/functions/next_test  200
+/_next/data/tveFS5JTA64mmnqiHIWfA/index.json  /.netlify/functions/next_any  200
+/_next/data/tveFS5JTA64mmnqiHIWfA/*  /.netlify/functions/next_any  200
+/api/hello  /.netlify/functions/next_api_hello  200
+/test  /.netlify/functions/next_test  200
+/_next/data/tveFS5JTA64mmnqiHIWfA/:bar/test.json  /.netlify/functions/next_bar_test  200
+/_next/image*  url=:url w=:width q=:quality  /.netlify/functions/next_image?url=:url&w=:width&q=:quality  200
+/:bar/test  /.netlify/functions/next_bar_test  200
+/  /.netlify/functions/next_any  200
+/_next/*  /_next/:splat  200
+/*  /.netlify/functions/next_any  200
+```
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+### Expected
 
-## Learn More
+Previous to `2.8.3` the file looks like this:
 
-To learn more about Next.js, take a look at the following resources:
+```
+# Next-on-Netlify Redirects
+/_next/data/xcFf_YKEf4dQzabGKlRTV/test.json  /.netlify/functions/next_test  200
+/_next/data/xcFf_YKEf4dQzabGKlRTV/:bar/test.json  /.netlify/functions/next_bar_test  200
+/_next/data/xcFf_YKEf4dQzabGKlRTV/index.json  /.netlify/functions/next_any  200
+/_next/data/xcFf_YKEf4dQzabGKlRTV/*  /.netlify/functions/next_any  200
+/_next/image*  url=:url w=:width q=:quality  /.netlify/functions/next_image?url=:url&w=:width&q=:quality  200
+/api/hello  /.netlify/functions/next_api_hello  200
+/test  /.netlify/functions/next_test  200
+/:bar/test  /.netlify/functions/next_bar_test  200
+/  /.netlify/functions/next_any  200
+/_next/*  /_next/:splat  200
+/*  /.netlify/functions/next_any  200
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## Problem
 
-## Deploy on Vercel
+The data routes `/_next/data` are split into two groups. `/_next/data/tveFS5JTA64mmnqiHIWfA/*  /.netlify/functions/next_any  200` catches any data route, but `/_next/data/tveFS5JTA64mmnqiHIWfA/:bar/test.json  /.netlify/functions/next_bar_test  200` is below this redirect. This causes our application to fail to load data when the user does a client side transition.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/import?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Workaround: Downgrade `next-on-netlify` to `2.8.2`.
